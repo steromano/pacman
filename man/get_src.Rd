@@ -3,7 +3,7 @@
 \alias{get_src}
 \title{Get the source files for a project}
 \usage{
-get_src(path)
+get_src(path = ".")
 }
 \arguments{
 \item{path}{Root directory of the project.}
