@@ -13,11 +13,10 @@ on <- function(path = ".") {
   path <- normalizePath(path, mustWork = TRUE)
   .libPaths(local_lib_path(path, check = TRUE))
   encapsulate({
-    to_load <- unload_pkgs(other_pkgs())
+    to_load <- other_pkgs(all = FALSE)
+    unload_pkgs(other_pkgs(all = TRUE))
     local_mode <- TRUE
   })
-  # path not found in encapsulate
-  capsule$proj_root <- path
   invisible(TRUE)
 }
 
@@ -27,9 +26,9 @@ off <- function() {
   if (!pacman_on()) {
     return(invisible(FALSE))
   }
-  .libPaths(capsule$global_lib)
-  load_pkgs(capsule$to_load)
   encapsulate({
+    .libPaths(global_lib)
+    load_pkgs(to_load)
     to_load <- NULL
     local_mode <- FALSE
   })
@@ -67,6 +66,19 @@ local_libs <- function(path) {
   setNames(nm = list.files(local_lib_path(path)))
 }
 
+other_pkgs <- function(all) {
+  pkgs <- grep("^package:", search(), value = TRUE)
+  pkgs <- sub("^package:", "", pkgs)
+  if (all) {
+    pkgs <- unique(c(pkgs, loadedNamespaces()))
+  }
+  pkgs <- Filter(function(x) !pkg_is_base(x) && x != "pacman", pkgs)
+  if (length(pkgs) == 0) {
+    return(NULL)
+  }
+  pkgs
+}
+
 load_pkgs <- function(pkgs) {
   # Reverse to preserve ordering of search path.
   for (pkg in rev(pkgs)) {
@@ -75,20 +87,14 @@ load_pkgs <- function(pkgs) {
 }
 
 unload_pkgs <- function(pkgs) {
-  for (pkg in sprintf("package:%s", pkgs)) {
-    detach(pkg, unload = TRUE, character.only = TRUE)
+  for (pkg in pkgs) {
+    pkg_ <- sprintf("package:%s", pkg)
+    if (pkg_ %in% search()) {
+      detach(pkg_, unload = TRUE, character.only = TRUE)
+    } else {
+      unloadNamespace(pkg)
+    }
   }
-  pkgs
-}
-
-# Need better method here: e.g. devtools namespace is loaded but not attached when building
-# a package. This means it is not attached so when you try and install it, the user will
-# be asked if they want to restart R.
-other_pkgs <- function() {
-  # Not sure whether to look at loadedNamespaces() too?
-  pkgs <- grep("^package:", search(), value = TRUE)
-  pkgs <- sub("^package:", "", pkgs)
-  Filter(function(x) !pkg_is_base(x) && x != "pacman", pkgs)
 }
 
 pkg_is_base <- function(x) {
