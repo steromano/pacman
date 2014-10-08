@@ -1,51 +1,50 @@
 #' Restore the private library from the local source files
 #'
 #' This function is similar to \code{packrat::\link[packrat]{restore}()},
-#' but it installs the packages from the sources in \code{packrat/src}, instead of 
+#' but it installs the packages from the sources in \code{packrat/src}, instead of
 #' obtaining them remotely.
 #'
 #' @param path Root directory of the project.
 #' @export
+restore_from_src <- function(path = ".") {
+  path <- normalizePath(path, mustWork = TRUE)
 
-restore_from_src_impl <- function(path = ".") {
-  path <- normalizePath(path)
-  
-  opts <- lapply(list(repos = "repos", pkgType = "pkgType"), getOption)
-  on.exit(do.call(options, opts))
-  
-  repo_create(path)
-  options(repos = paste0("file://", repo_(path)),
-          pkgType = "source")
-  
-  for (pkg in list.files(src_(path), full.name = FALSE)) {
+  on(path)
+  on.exit(off(), add = TRUE)
+
+  # create a local repository
+  repos_create(path)
+
+  # set global options to use it
+  .repos <- getOption("repos")
+  .pkgType <- getOption("pkgType")
+  options(repos = sprintf("file://%s", repos_path(path)), pkgType = "source")
+  on.exit(options(repos = .repos, pkyType = .pkgType), add = TRUE)
+  on.exit(unlink(repos_path(path), recursive = TRUE), add = TRUE)
+
+  # install packages from local repository
+  for (pkg in pkg_names_from_src(path)) {
     install.packages(pkg)
   }
-  
-  system(paste("rm -r", repo_(path)))
 }
 
+# helper functions ------------------------------------------------------------------
 
-# helper functions -------------------------------------
-
-in_packrat <- function(...) {
-  function(path)
-    file.path(path, "packrat", ...)
-}
-
-src_ <- in_packrat("src")
-
-lib_ <- in_packrat("lib", R.version$platform, getRversion())
-
-repo_ <- in_packrat("repo")
-
-
-repo_create <- function(path) {
-  contrib <- file.path(repo_(path), "src", "contrib")
+repos_create <- function(path) {
+  contrib <- file.path(repos_path(path), "src", "contrib")
   dir.create(contrib, recursive = TRUE)
   file.copy(tarballs(path), contrib)
   tools::write_PACKAGES(contrib)
 }
 
+pkg_names_from_src <- function(path) {
+  files <- list.files(src_path(path), full.name = FALSE)
+  sub("_.*", "", files)
+}
+
+repos_path <- function(path) {
+  file.path(path, "packrat", "repos")
+}
 tarballs <- function(path) {
   list.files(
     file.path(path, "packrat", "src"),
