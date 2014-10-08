@@ -2,6 +2,7 @@
 
 export(create_packrat_subdir)
 export(get_src)
+export(init)
 export(off)
 export(on)
 export(pacman_status)
