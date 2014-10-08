@@ -2,7 +2,7 @@
 #'
 #' @param path Root directory of the project.
 #' @export
-get_src <- function(path) {
+get_src <- function(path = ".") {
   path <- normalizePath(path, mustWork = TRUE)
   pkgs <- local_libs(path)
   lapply(pkgs, get_src_single, path = path)
