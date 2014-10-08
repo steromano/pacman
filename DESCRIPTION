@@ -1,0 +1,16 @@
+Package: pacman
+Type: Package
+Title: Light-weight package management
+Version: 0.0.1
+Date: 2014-10-08
+Author: Guy Dawson <guy.dawson@gamesys.co.uk>
+    Stefano Romano <stefano.romano@gamesys.co.uk>
+Maintainer: Guy Dawson <guy.dawson@gamesys.co.uk>
+    Stefano Romano <stefano.romano@gamesys.co.uk>
+Description: Light-weight version of packrat which allows the user to restore
+    a project's libraries from source. It has been written that so that it is
+    hopefully compatible with packrat.
+Depends:
+    R (>= 3.1)
+Imports:
+    devtools
