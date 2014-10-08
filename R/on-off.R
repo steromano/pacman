@@ -8,7 +8,7 @@ NULL
 #' @rdname lib_trees
 on <- function(path = ".") {
   if (pacman_on()) {
-    return(invisible(FALSE))
+    return(!pacman_status())
   }
   path <- normalizePath(path, mustWork = TRUE)
   .libPaths(local_lib_path(path, check = TRUE))
@@ -17,14 +17,14 @@ on <- function(path = ".") {
     unload_pkgs(other_pkgs(all = TRUE))
     local_mode <- TRUE
   })
-  invisible(TRUE)
+  pacman_status()
 }
 
 #' @export
 #' @rdname lib_trees
 off <- function() {
   if (!pacman_on()) {
-    return(invisible(FALSE))
+    return(pacman_status())
   }
   encapsulate({
     .libPaths(global_lib)
@@ -32,7 +32,7 @@ off <- function() {
     to_load <- NULL
     local_mode <- FALSE
   })
-  invisible(TRUE)
+  !pacman_status()
 }
 
 #' @export
