@@ -3,14 +3,14 @@
 \alias{lib_trees}
 \alias{off}
 \alias{on}
-\alias{pacman_status}
+\alias{pacman_mode}
 \title{Set library trees}
 \usage{
-on(path = ".")
+on(path = ".", keep_loaded = NULL)
 
 off()
 
-pacman_status()
+pacman_mode()
 }
 \arguments{
 \item{path}{Root directory of project.}
