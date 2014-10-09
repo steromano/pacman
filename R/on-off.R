@@ -66,7 +66,7 @@ pacman_on <- function() {
 
 local_lib_path <- function(path = ".", check = FALSE) {
   path <- normalizePath(path, mustWork = TRUE)
-  path <- file.path(path, "packrat", "lib", R.version$platform, getRversion())
+  path <- file.path(path, "pacman", "lib", R.version$platform, getRversion())
   if (check && !file.exists(path)) {
     stop("Project does not have a valid private library.", call. = FALSE)
   }

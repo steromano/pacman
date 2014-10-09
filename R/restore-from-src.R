@@ -1,7 +1,7 @@
 #' Restore the private library from the local source files
 #'
 #' This function is similar to \code{packrat::\link[packrat]{restore}()},
-#' but it installs the packages from the sources in \code{packrat/src}, instead of
+#' but it installs the packages from the sources in \code{pacman/src}, instead of
 #' obtaining them remotely.
 #'
 #' @param path Root directory of the project.
@@ -43,11 +43,11 @@ pkg_names_from_src <- function(path) {
 }
 
 repos_path <- function(path) {
-  file.path(path, "packrat", "repos")
+  file.path(path, "pacman", "repos")
 }
 tarballs <- function(path) {
   list.files(
-    file.path(path, "packrat", "src"),
+    file.path(path, "pacman", "src"),
     pattern = "*.tar.gz",
     recursive = TRUE,
     full.names = TRUE

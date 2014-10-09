@@ -47,19 +47,19 @@ get_github_single <- function(path, desc) {
   )
   base_name <- sprintf("%s_%s", desc$Package, desc$Version)
   zip_file <- src_path(path, sprintf("%s.zip", base_name))
-  
+
   devtools:::download(zip_file, url)
   on.exit(unlink(zip_file), add = TRUE)
-  
+
   unzip(zip_file, exdir = src_path(path))
   unzip_dir <- list.dirs(src_path(path), recursive = FALSE)
   on.exit(unlink(unzip_dir, recursive = TRUE), add = TRUE)
-  
+
   tar_file <- sprintf("%s.tar.gz", base_name)
   tar(src_path(path, tar_file), files = unzip_dir)
 }
 
 # path to source files in project
 src_path <- function(path, ...) {
-  file.path(path, "packrat", "src", ...)
+  file.path(path, "pacman", "src", ...)
 }

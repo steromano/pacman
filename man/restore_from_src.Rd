@@ -10,7 +10,7 @@ restore_from_src(path = ".")
 }
 \description{
 This function is similar to \code{packrat::\link[packrat]{restore}()},
-but it installs the packages from the sources in \code{packrat/src}, instead of
+but it installs the packages from the sources in \code{pacman/src}, instead of
 obtaining them remotely.
 }
 
