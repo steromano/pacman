@@ -11,7 +11,7 @@ clean_default_library <- function() {
   if(!file.exists(user_library) || !file.info(user_library)$isdir) {
     stop("Invalid user library. Please set your user library by adding 'R_LIBS = <user library> to .Renviron'")
   }
-  all_pkgs <- utils:::installed.packages(.Library)
+  all_pkgs <- utils::installed.packages(.Library)
   user_pkgs <- rownames(all_pkgs[is.na(all_pkgs[, "Priority"]), , drop = F])
 
   if(is.null(user_pkgs)) {
