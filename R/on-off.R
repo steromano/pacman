@@ -6,25 +6,30 @@ NULL
 
 #' @export
 #' @rdname lib_trees
-on <- function(path = ".") {
+on <- function(path = ".", keep_loaded = NULL) {
   if (pacman_on()) {
-    return(!pacman_status())
+    return(Negate(pacman_mode)())
   }
   path <- normalizePath(path, mustWork = TRUE)
-  .libPaths(local_lib_path(path, check = TRUE))
+  encapsulate(.to_load <- other_pkgs(all = FALSE))
+  unload_pkgs(other_pkgs(all = TRUE), keep_loaded = keep_loaded)
   encapsulate({
-    to_load <- other_pkgs(all = FALSE)
-    unload_pkgs(other_pkgs(all = TRUE))
+    to_load <- .to_load
     local_mode <- TRUE
+    rm(.to_load)
   })
-  pacman_status()
+  .libPaths(local_lib_path(path, check = TRUE))
+  for(pkg in keep_loaded) {
+    suppressMessages(load_from_global(pkg, character.only = TRUE))
+  }
+  pacman_mode()
 }
 
 #' @export
 #' @rdname lib_trees
 off <- function() {
   if (!pacman_on()) {
-    return(pacman_status())
+    return(pacman_mode())
   }
   encapsulate({
     .libPaths(global_lib)
@@ -32,12 +37,12 @@ off <- function() {
     to_load <- NULL
     local_mode <- FALSE
   })
-  !pacman_status()
+  Negate(pacman_mode)()
 }
 
 #' @export
 #' @rdname lib_trees
-pacman_status <- function() {
+pacman_mode <- function() {
   if (pacman_on()) {
     message("Using local libraries:")
   } else {
@@ -72,7 +77,7 @@ other_pkgs <- function(all) {
   if (all) {
     pkgs <- unique(c(pkgs, loadedNamespaces()))
   }
-  pkgs <- Filter(function(x) !pkg_is_base(x) && x != "pacman", pkgs)
+  pkgs <- Filter(function(x) !pkg_is_base(x) && ! (x %in% c("pacman", "devtools")), pkgs)
   if (length(pkgs) == 0) {
     return(NULL)
   }
@@ -82,18 +87,17 @@ other_pkgs <- function(all) {
 load_pkgs <- function(pkgs) {
   # Reverse to preserve ordering of search path.
   for (pkg in rev(pkgs)) {
+    message(paste("- Loading package", pkg))
     library(pkg, character.only = TRUE)
   }
 }
 
-unload_pkgs <- function(pkgs) {
+unload_pkgs <- function(pkgs, keep_loaded = NULL) {
   for (pkg in pkgs) {
-    pkg_ <- sprintf("package:%s", pkg)
-    if (pkg_ %in% search()) {
-      detach(pkg_, unload = TRUE, character.only = TRUE)
-    } else {
-      unloadNamespace(pkg)
+    if(paste0("package:", pkg) %in% search() && !(pkg %in% keep_loaded)) {
+      message("- Unloading package ", pkg)
     }
+    suppressMessages(devtools::unload(devtools::inst(pkg)))
   }
 }
 
