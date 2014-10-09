@@ -9,7 +9,7 @@
 restore_from_src <- function(path = ".") {
   path <- normalizePath(path, mustWork = TRUE)
 
-  suppressMessages(dir.create(local_lib_path(path)))
+  suppressMessages(dir.create(local_lib_path(path), recursive = TRUE))
 
   on(path)
   on.exit(off(), add = TRUE)
