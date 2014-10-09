@@ -6,7 +6,7 @@
 \alias{pacman_mode}
 \title{Set library trees}
 \usage{
-on(path = ".", keep_loaded = NULL)
+on(path = ".", keep_attached = NULL, keep_namespace = NULL)
 
 off()
 

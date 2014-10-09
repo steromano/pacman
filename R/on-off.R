@@ -6,21 +6,27 @@ NULL
 
 #' @export
 #' @rdname lib_trees
-on <- function(path = ".", keep_loaded = NULL) {
+on <- function(path = ".", keep_attached = NULL, keep_namespace = NULL) {
   if (pacman_on()) {
     return(Negate(pacman_mode)())
   }
   path <- normalizePath(path, mustWork = TRUE)
+
   encapsulate(.to_load <- other_pkgs(all = FALSE))
-  unload_pkgs(other_pkgs(all = TRUE), keep_loaded = keep_loaded)
+  unload_pkgs(other_pkgs(all = TRUE), keep_attached = keep_attached)
+  local_lib_path <- local_lib_path(path, check = TRUE)
   encapsulate({
     to_load <- .to_load
     local_mode <- TRUE
     rm(.to_load)
   })
-  .libPaths(local_lib_path(path, check = TRUE))
-  for(pkg in keep_loaded) {
-    suppressMessages(load_from_global(pkg, character.only = TRUE))
+  .libPaths(local_lib_path)
+
+  for(pkg in keep_attached) {
+    suppressMessages(library_global(pkg, character.only = TRUE))
+  }
+  for(pkg in keep_namespace) {
+    loadNamespace_global(pkg)
   }
   pacman_mode()
 }
@@ -92,9 +98,9 @@ load_pkgs <- function(pkgs) {
   }
 }
 
-unload_pkgs <- function(pkgs, keep_loaded = NULL) {
+unload_pkgs <- function(pkgs, keep_attached = NULL) {
   for (pkg in pkgs) {
-    if(paste0("package:", pkg) %in% search() && !(pkg %in% keep_loaded)) {
+    if(paste0("package:", pkg) %in% search() && !(pkg %in% keep_attached)) {
       message("- Unloading package ", pkg)
     }
     suppressMessages(devtools::unload(devtools::inst(pkg)))
