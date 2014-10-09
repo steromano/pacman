@@ -11,6 +11,5 @@ Description: Light-weight version of packrat which allows the user to restore
     a project's libraries from source. It has been written that so that it is
     hopefully compatible with packrat.
 Depends:
-    R (>= 3.1)
-Imports:
+    R (>= 3.1),
     devtools
