@@ -8,12 +8,12 @@
 init <- function(path = ".", enter = TRUE) {
   message("Initialising pacman project ...")
   dir.create(path, showWarnings = FALSE)
-  if(file.exists(file.path(path, 'packrat'))) {
-    message("Error: The project already contains a packrat folder")
+  if(file.exists(file.path(path, 'pacman'))) {
+    message("Error: The project already contains a pacman folder")
     return(invisible(FALSE))
   }
 
-  create_packrat_subdir(path)
+  create_pacman_subdir(path)
   if(enter) {
     on(path)
     setwd(path)
