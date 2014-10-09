@@ -1,6 +1,6 @@
 #' @export
 library_global <- function(pkg, ...) {
-  eval(substitute(pkg, lib = capsule$global_lib, ...))
+  eval(substitute(library(pkg, lib = capsule$global_lib, ...)))
 }
 
 #' @export
