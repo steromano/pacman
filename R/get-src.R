@@ -4,11 +4,15 @@
 #' @export
 get_src <- function(path = ".") {
   path <- normalizePath(path, mustWork = TRUE)
-  pkgs <- local_libs(path)
+  pkgs <- local_pkgs(path)
   lapply(pkgs, get_src_single, path = path)
 }
 
 # helper functions --------------------------------------------------------------------
+
+local_pkgs <- function(path) {
+  list.files(local_lib_path(path), full.names = FALSE)
+}
 
 # Source for a single package.
 get_src_single <- function(path, pkg) {
@@ -48,7 +52,7 @@ get_github_single <- function(path, desc) {
   base_name <- sprintf("%s_%s", desc$Package, desc$Version)
   zip_file <- src_path(path, sprintf("%s.zip", base_name))
 
-  devtools:::download(zip_file, url)
+  call_from_internal(devtools, download, zip_file, url)
   on.exit(unlink(zip_file), add = TRUE)
 
   unzip(zip_file, exdir = src_path(path))
