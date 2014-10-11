@@ -17,7 +17,7 @@ local_pkgs <- function(path) {
 # Source for a single package.
 get_src_single <- function(path, pkg) {
   desc <- packageDescription(pkg, local_lib_path(path))
-  if (identical(desc$Repository, "CRAN")) {
+  if (identical(desc$Repository, cran_repos())) {
     get_cran_single(path, desc)
   } else if (identical(desc$RemoteType, "github")) {
     get_github_single(path, desc)
@@ -26,11 +26,13 @@ get_src_single <- function(path, pkg) {
   }
 }
 
+cran_repos <- function() names(getOption("repos"))
+
 # Source if the package is on CRAN.
 # Sometimes the source version may be different to the binary.
 get_cran_single <- function(path, desc) {
-  cran_pkgs <- available.packages(type = "source")
-  src <- cran_pkgs[cran_pkgs[, "Package"] == desc$Package, ]
+  pkgs <- available.packages(type = "source")
+  src <- pkgs[pkgs[, "Package"] == desc$Package, ]
   if (src["Version"] != desc$Version) {
     warning(sprintf(
       "For package: %s, binary version is: %s, source version is %s.",
@@ -52,7 +54,7 @@ get_github_single <- function(path, desc) {
   base_name <- sprintf("%s_%s", desc$Package, desc$Version)
   zip_file <- src_path(path, sprintf("%s.zip", base_name))
 
-  call_from_internal(devtools, download, zip_file, url)
+  globalise(devtools:::download)(zip_file, url)
   on.exit(unlink(zip_file), add = TRUE)
 
   unzip(zip_file, exdir = src_path(path))
