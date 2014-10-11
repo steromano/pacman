@@ -9,10 +9,10 @@
 restore_from_src <- function(path = ".") {
   path <- normalizePath(path, mustWork = TRUE)
 
-  suppressMessages(dir.create(local_lib_path(path), recursive = TRUE))
+  suppressWarnings(dir.create(local_lib_path(path), recursive = TRUE))
 
   on(path)
-  on.exit(off(), add = TRUE)
+  on.exit(off())
 
   # create a local repository
   repos_create(path)
