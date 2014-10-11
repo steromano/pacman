@@ -1,68 +1,58 @@
-#' Set library trees
-#'
-#' @param path Root directory of project.
-#' @name lib_trees
-NULL
-
 #' @export
-#' @rdname lib_trees
-on <- function(path = ".", keep_attached = NULL, keep_namespace = NULL) {
-  if (pacman_on()) {
-    return(Negate(pacman_mode)())
-  }
-  path <- normalizePath(path, mustWork = TRUE)
-
-  encapsulate(.to_load <- other_pkgs(all = FALSE))
-  unload_pkgs(other_pkgs(all = TRUE), keep_attached = keep_attached)
+on <- function(path = ".", soft = FALSE) {
   local_lib_path <- local_lib_path(path, check = TRUE)
-  encapsulate({
-    to_load <- .to_load
-    local_mode <- TRUE
-    rm(.to_load)
-  })
-  .libPaths(local_lib_path)
+  if(local_lib_path %in% capsule$global_lib) {
+    stop("Local library found in global libraries")
+  }
 
-  for(pkg in keep_attached) {
-    suppressMessages(library_global(pkg, character.only = TRUE))
+  if(capsule$mode == "on") {
+    if(soft) {
+      .libPaths(c(local_lib_path, capsule$global_lib))
+    }
+    pacman_mode()
+    return(invisible(FALSE))
   }
-  for(pkg in keep_namespace) {
-    loadNamespace_global(pkg)
-  }
+  encapsulate({
+    to_attach[[mode]] <- other_pkgs(all = FALSE)
+    mode <- "on"
+    })
+  unload_pkgs(other_pkgs(all = TRUE))
+  .libPaths(if(soft) c(local_lib_path, capsule$global_lib) else local_lib_path)
+  encapsulate(
+    attach_pkgs(to_attach[["on"]])
+  )
   pacman_mode()
 }
 
 #' @export
-#' @rdname lib_trees
 off <- function() {
-  if (!pacman_on()) {
-    return(pacman_mode())
+  if(capsule$mode == "off") {
+    pacman_mode()
+    return(invisible(FALSE))
   }
   encapsulate({
-    .libPaths(global_lib)
-    load_pkgs(to_load)
-    to_load <- NULL
-    local_mode <- FALSE
+    to_attach[[mode]] <- other_pkgs(all = FALSE)
+    mode <- "off"
   })
-  Negate(pacman_mode)()
+  .libPaths(capsule$global_lib)
+  unload_pkgs(other_pkgs(all = TRUE))
+  encapsulate(
+    attach_pkgs(to_attach[["off"]])
+  )
+  pacman_mode()
 }
 
 #' @export
-#' @rdname lib_trees
-pacman_mode <- function() {
-  if (pacman_on()) {
-    message("Using local libraries:")
-  } else {
-    message("Using global libraries:")
+pacman_mode <- function(quiet = FALSE) {
+  if(!quiet) {
+    message("pacman mode ", capsule$mode)
+    message("Using libraries")
+    lapply(.libPaths(), function(x) message(sprintf("- %s", x)))
   }
-  lapply(.libPaths(), function(x) message(sprintf("- %s", x)))
-  invisible(pacman_on())
+  invisible(capsule$mode)
 }
 
-pacman_on <- function() {
-  capsule$local_mode
-}
-
-# helper functions -------------------------------------------------------------------
+# helper_functions -----------------------------
 
 local_lib_path <- function(path = ".", check = FALSE) {
   path <- normalizePath(path, mustWork = TRUE)
@@ -73,9 +63,6 @@ local_lib_path <- function(path = ".", check = FALSE) {
   path
 }
 
-local_libs <- function(path) {
-  setNames(nm = list.files(local_lib_path(path)))
-}
 
 other_pkgs <- function(all) {
   pkgs <- grep("^package:", search(), value = TRUE)
@@ -83,31 +70,38 @@ other_pkgs <- function(all) {
   if (all) {
     pkgs <- unique(c(pkgs, loadedNamespaces()))
   }
-  pkgs <- Filter(function(x) !pkg_is_base(x) && ! (x %in% c("pacman", "devtools")), pkgs)
+  pkgs <- Filter(function(x) !pkg_is_base(x) && x != "pacman", pkgs)
   if (length(pkgs) == 0) {
-    return(NULL)
+    return(NA)
   }
   pkgs
-}
-
-load_pkgs <- function(pkgs) {
-  # Reverse to preserve ordering of search path.
-  for (pkg in rev(pkgs)) {
-    message(paste("- Loading package", pkg))
-    library(pkg, character.only = TRUE)
-  }
-}
-
-unload_pkgs <- function(pkgs, keep_attached = NULL) {
-  for (pkg in pkgs) {
-    if(paste0("package:", pkg) %in% search() && !(pkg %in% keep_attached)) {
-      message("- Unloading package ", pkg)
-    }
-    suppressMessages(devtools::unload(devtools::inst(pkg)))
-  }
 }
 
 pkg_is_base <- function(x) {
   desc <- packageDescription(x)
   !is.null(desc$Priority) && desc$Priority == "base"
+}
+
+unload_pkgs <- function(pkgs) {
+  pkgs <- Filter(function(x) !is.na(x), pkgs)
+  for (pkg in pkgs) {
+    if(paste0("package:", pkg) %in% search()) {
+      message("- Unloading package ", pkg)
+    }
+    suppressMessages(devtools::unload(devtools::inst(pkg)))
+  }
+  try(unloadNamespace("memoise"))
+  try(unloadNamespace("digest"))
+  try(unloadNamespace("devtools"))
+}
+
+attach_pkgs <- function(pkgs) {
+  pkgs <- Filter(function(x) !is.na(x), pkgs)
+  # Reverse to preserve ordering of search path.
+  for (pkg in rev(pkgs)) {
+    message(paste("- Attacing package", pkg))
+    if(!suppressWarnings(require(pkg, character.only = TRUE, quietly = TRUE))) {
+      message("-- Failed. Package not attached.")
+    }
+  }
 }
