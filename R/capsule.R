@@ -14,7 +14,7 @@ encap({
   # When entering pacman mode on, the working directory is set to the root of the project.
   # When enetering pacman mode off, the working directory is set to what it previosuly
   # was in this mode.
-  wd <- function(path) if (mode == "on") setwd(path) else setwd(cwd[[mode]])
+#   wd <- function(path) if (mode == "on") setwd(path) else setwd(cwd[[mode]])
 })
 
 

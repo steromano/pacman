@@ -11,16 +11,16 @@ switch_mode <- function(mode) {
     off = function(...) .libPaths(c(.libPaths(), encap(global_lib)))
   )
 
-  function(path = NULL) {
+  function(path = ".") {
     if (encap(mode) == mode) {
       return(pacman_mode())
     }
 
-    # Cache the attached packages and the working directory.
+    # Cache the attached packages (and the working directory ?).
     # Unload all loaded packages.
     encap({
       to_attach[[mode]] <- other_pkgs(attached_only = TRUE)
-      cwd[[mode]] <- getwd()
+#       cwd[[mode]] <- getwd()
     })
 
     # Unload packages using all lib paths, then switch to the lib path of
@@ -36,7 +36,7 @@ switch_mode <- function(mode) {
     capsule$mode <- mode
     pacman_mode()
     encap(attach_pkgs(to_attach[[mode]]))
-    capsule$wd(path)
+#     capsule$wd(path)
   }
 }
 
@@ -114,9 +114,9 @@ unload_pkgs <- filter_na(function(pkgs, quiet = FALSE) {
   for (pkg in pkgs) {
     unload_pkg(pkg, quiet)
   }
-  try(unloadNamespace("memoise"))
-  try(unloadNamespace("digest"))
-  try(unloadNamespace("devtools"))
+  try(unloadNamespace("memoise"), silent = TRUE)
+  try(unloadNamespace("digest"), silent = TRUE)
+  try(unloadNamespace("devtools"), silent = TRUE)
 })
 
 unload_pkg <- function(pkg, quiet) {
