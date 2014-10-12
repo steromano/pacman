@@ -1,51 +1,59 @@
-switch_mode <- function(mode) {
-  mode_lib_path <- switch(mode,
-    on = local_lib_path,
-    off = function(...) {
-      encap(global_lib)
-    }
-  )
+switch_mode <- function(path = ".") {
+  # Cache the path. This won't be used if turning pacman mode off.
+  capsule$path <- normalizePath(path, mustWork = TRUE)
 
-  all_lib_paths <- switch(mode,
-    on = function(path = ".") .libPaths(c(mode_lib_path(path), encap(global_lib))),
-    off = function(...) .libPaths(c(.libPaths(), encap(global_lib)))
-  )
+  # Cache the attached packages (and the working directory ?).
+  # Unload all loaded packages.
+  encap(to_attach[[mode]] <- other_pkgs(attached_only = TRUE))
 
-  function(path = ".") {
-    if (encap(mode) == mode) {
-      return(pacman_mode())
-    }
+  # Unload packages using all lib paths, then switch to the lib path of
+  # the respective mode.
+  encap(all_lib_paths())
+  unload_pkgs(other_pkgs(attached_only = FALSE))
+  encap(mode_lib_path())
 
-    # Cache the attached packages (and the working directory ?).
-    # Unload all loaded packages.
-    encap({
-      to_attach[[mode]] <- other_pkgs(attached_only = TRUE)
-#       cwd[[mode]] <- getwd()
-    })
-
-    # Unload packages using all lib paths, then switch to the lib path of
-    # the respective mode.
-    .libPaths(all_lib_paths(path))
-    unload_pkgs(other_pkgs(attached_only = FALSE))
-    .libPaths(mode_lib_path(path))
-
-    # Switch the mode, attach the packages previously loaded in that mode.
-    # If the mode is getting switched to on, set the working directory to
-    # the root of the pacman project, else set it to what it previously was in
-    # the off mode.
-    capsule$mode <- mode
-    pacman_mode()
-    encap(attach_pkgs(to_attach[[mode]]))
-#     capsule$wd(path)
-  }
+  # Switch the mode, attach the packages previously loaded in that mode.
+  encap(switch_mode_impl())
+  pacman_mode()
+  encap(attach_pkgs(to_attach[[mode]]))
 }
 
-#' @export
-on <- switch_mode("on")
+#' Turn pacman mode on or off
+#'
+#' @details These functions are used to turn pacman mode on and off. In addition to changing
+#'   the \code{\link{.libPaths}()} for packages, they will restore the
+#'   \code{\link{loadedNamespaces}()} and \code{\link{attach}ed} packages using the respective
+#'   library trees.
+#' @name on_off
+#' @seealso \code{\link{pacman_mode}()} which allows the user to see which mode they are
+#'   currently in.
+NULL
 
+#' @usage on(path = ".")
+#' @param path Path to root of pacman project.
 #' @export
-off <- switch_mode("off")
+#' @rdname on_off
+on <- global_only(switch_mode)
 
+#' @usage off()
+#' @export
+#' @rdname on_off
+off <- local_only(switch_mode)
+
+#' Pacman mode
+#'
+#' This function generates a \code{\link{message}} which informs the user whether pacman mode
+#' is \code{\link{on}()} or \code{\link{off}()}, as well as the library trees within which
+#' packages are looked for.
+#'
+#' @param quiet Message the user or just return the mode (invisibly)?
+#' @details A project with root directory \code{<root>} can be treated as a pacman project if
+#'   it has a subdirectory:
+#'   \code{file.path(<root>, "pacman", "lib", R.version$platform, getRversion())}
+#'   i.e. a local library. Use \code{\link{init}()} to save having to contstruct this manually.
+#'
+#'   A pacman project can be leveraged to build a package using continuous integration,
+#'   or to make a process deployable to production.
 #' @export
 pacman_mode <- function(quiet = FALSE) {
   if(!quiet) {
@@ -56,6 +64,17 @@ pacman_mode <- function(quiet = FALSE) {
 }
 
 # helper_functions -----------------------------------------------------------------
+
+# Find the local library lib path
+
+local_lib_path <- function(path = ".", check = FALSE) {
+  path <- normalizePath(path, mustWork = TRUE)
+  path <- file.path(path, "pacman", "lib", R.version$platform, getRversion())
+  if (check && !file.exists(path)) {
+    stop("Project does not have a valid private library.", call. = FALSE)
+  }
+  path
+}
 
 # Generate list of 'other' (not base packages, pacman or packrat) attached or
 # or loaded and attached (dependent on argument).
@@ -114,9 +133,7 @@ unload_pkgs <- filter_na(function(pkgs, quiet = FALSE) {
   for (pkg in pkgs) {
     unload_pkg(pkg, quiet)
   }
-  try(unloadNamespace("memoise"), silent = TRUE)
-  try(unloadNamespace("digest"), silent = TRUE)
-  try(unloadNamespace("devtools"), silent = TRUE)
+  try_unload_namespace(c("memoise", "digest", "devtools"))
 })
 
 unload_pkg <- function(pkg, quiet) {
@@ -129,6 +146,14 @@ unload_pkg <- function(pkg, quiet) {
     }
   }
   suppressMessages(devtools::unload(devtools::inst(pkg)))
+}
+
+try_unload_namespace_single <- {
+  function(pkg, ...) try(unloadNamespace(pkg), ...)
+}
+
+try_unload_namespace <- function(pkgs, ...) {
+  lapply(pkgs, try_unload_namespace_single, ...)
 }
 
 # Attach packages.

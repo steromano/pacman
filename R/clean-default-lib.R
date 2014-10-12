@@ -1,10 +1,10 @@
 #' Clean the default library of user-installed packages
 #'
 #' This function moves all the non-system packages (those with \code{"Priority" = NA}) from the
-#' default library \code{.Library} to the user library specified in the environment variable
-#' \code{R_LIBS}. If a package is present in both library, it is just removed from the
-#' default library.
-
+#' default library \code{\link{.Library}} to the user library specified in the environment
+#' variable \code{\link{R_LIBS}}. If a package is present in both libraries, it is just removed
+#' from the default library.
+#'
 #' @export
 clean_default_library <- function() {
   user_library <- Sys.getenv("R_LIBS")

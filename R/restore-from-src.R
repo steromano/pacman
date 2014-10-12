@@ -1,27 +1,29 @@
-#' Restore the private library from the local source files
+#' Restore from source
 #'
-#' This function is similar to \code{packrat::\link[packrat]{restore}()},
-#' but it installs the packages from the sources in \code{pacman/src}, instead of
-#' obtaining them remotely.
+#' Restore the private library using source files obtained using \code{\link{get_source}()}.
 #'
 #' @param path Root directory of the project.
 #' @export
 restore_from_src <- function(path = ".") {
+  # NB: if some libraries are loaded which the user is trying to restore from source,
+  # then they will be prompted whether they would like to restart R. This is not good.
+  # Maybe all namespaces should be unloaded at the start of this function call: they
+  # can always be reloaded afterwards.
   path <- normalizePath(path, mustWork = TRUE)
 
   suppressWarnings(dir.create(local_lib_path(path), recursive = TRUE))
 
   on(path)
-  on.exit(off())
+  on.exit(off(), add = TRUE)
 
   # create a local repository
   repos_create(path)
 
   # set global options to use it
-  .repos <- getOption("repos")
-  .pkgType <- getOption("pkgType")
+  repos_old <- getOption("repos")
+  pkg_type_old <- getOption("pkgType")
   options(repos = sprintf("file://%s", repos_path(path)), pkgType = "source")
-  on.exit(options(repos = .repos, pkyType = .pkgType), add = TRUE)
+  on.exit(options(repos = repos_old, pkyType = pkg_type_old), add = TRUE)
   on.exit(unlink(repos_path(path), recursive = TRUE), add = TRUE)
 
   # install packages from local repository
@@ -47,6 +49,7 @@ pkg_names_from_src <- function(path) {
 repos_path <- function(path) {
   file.path(path, "pacman", "repos")
 }
+
 tarballs <- function(path) {
   list.files(
     file.path(path, "pacman", "src"),

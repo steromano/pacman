@@ -9,9 +9,13 @@ inspect_capsule()
 Inspect the capsule
 }
 \details{
-Taking inspiration from the source code in \code{https://github.com/wch/R6},
-  a capsule (internal environment) is used to hold meta data regarding the
-  \code{\link{on}()} and \code{\link{off}()} modes. \code{inspect_capsule()} allows
-  the user to inspect the contents of the capsule. It is intended for debugging only.
+Taking inspiration from the source code in \url{https://github.com/wch/R6},
+  a capsule (internal environment) is used to hold meta data relating to the different pacman
+  modes. \code{inspect_capsule()} allows the user to inspect the contents of the capsule.
+  It is intended for debugging only.
+}
+\seealso{
+\code{\link{pacman_mode}()} which allows the user to see which mode they are
+  currently in.
 }
 

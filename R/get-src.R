@@ -11,7 +11,7 @@ get_src <- function(path = ".") {
 # helper functions --------------------------------------------------------------------
 
 local_pkgs <- function(path) {
-  list.files(local_lib_path(path), full.names = FALSE)
+  list.files(local_lib_path(path, check = TRUE), full.names = FALSE)
 }
 
 # Source for a single package.
@@ -45,6 +45,8 @@ get_cran_single <- function(path, desc) {
   invisible(download.file(url, src_path(path, base_url)))
 }
 
+# tarring is currently buggy
+
 # Source if the package is on github.
 get_github_single <- function(path, desc) {
   url <- sprintf(
@@ -54,7 +56,13 @@ get_github_single <- function(path, desc) {
   base_name <- sprintf("%s_%s", desc$Package, desc$Version)
   zip_file <- src_path(path, sprintf("%s.zip", base_name))
 
-  globalise(devtools:::download)(zip_file, url)
+  if (encap(mode) == "on") {
+    download <- globalise(devtools:::download)
+  }
+  else {
+    download <- devtools:::download
+  }
+  download(zip_file, url)
   on.exit(unlink(zip_file), add = TRUE)
 
   unzip(zip_file, exdir = src_path(path))

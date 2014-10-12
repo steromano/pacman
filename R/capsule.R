@@ -7,36 +7,48 @@ encap <- function(expr) {
 
 encap({
   # These bindings allow a state of a mode to be kept when moving out of it
-  # and then back into it.
+  # and then back into it. Initial state is off; with no packages to attach on load in
+  # either state; and the path for the on mode is not known.
   mode <- "off"
   to_attach <- list(off = NA, on = NA)
-  cwd <- list(off = NA, on = NA)
-  # When entering pacman mode on, the working directory is set to the root of the project.
-  # When enetering pacman mode off, the working directory is set to what it previosuly
-  # was in this mode.
-#   wd <- function(path) if (mode == "on") setwd(path) else setwd(cwd[[mode]])
-})
+  path <- NA
 
+  # Utility function to make the intent of the following functions clearer.
+  switching_to <- function() switch(mode, on = "off", off = "on")
+
+  # Function for switching modes
+  switch_mode_impl <- function() mode <<- switching_to()
+
+  # Set the lib paths of the mode we are switching to.
+  mode_lib_path <- function() {
+    if (switching_to() == "on") {
+      .libPaths(local_lib_path(path, check = TRUE))
+    }
+    if (switching_to() == "off") {
+      .libPaths(global_lib)
+    }
+  }
+
+  # Set the library trees to the local and global lib paths respectively.
+  all_lib_paths <- function() {
+    if (switching_to() == "on") {
+      .libPaths(c(local_lib_path(path, check = TRUE), global_lib))
+    }
+    if (switching_to() == "off") {
+      .libPaths(c(.libPaths(), global_lib))
+    }
+  }
+})
 
 #' Inspect the capsule
 #'
-#' @details Taking inspiration from the source code in \code{https://github.com/wch/R6},
-#'   a capsule (internal environment) is used to hold meta data regarding the
-#'   \code{\link{on}()} and \code{\link{off}()} modes. \code{inspect_capsule()} allows
-#'   the user to inspect the contents of the capsule. It is intended for debugging only.
+#' @details Taking inspiration from the source code in \url{https://github.com/wch/R6},
+#'   a capsule (internal environment) is used to hold meta data relating to the different pacman
+#'   modes. \code{inspect_capsule()} allows the user to inspect the contents of the capsule.
+#'   It is intended for debugging only.
+#' @seealso \code{\link{pacman_mode}()} which allows the user to see which mode they are
+#'   currently in.
 #' @export
 inspect_capsule <- function() {
   as.list(capsule)
 }
-
-# Find the local library path
-
-local_lib_path <- function(path = ".", check = FALSE) {
-  path <- normalizePath(path, mustWork = TRUE)
-  path <- file.path(path, "pacman", "lib", R.version$platform, getRversion())
-  if (check && !file.exists(path)) {
-    stop("Project does not have a valid private library.", call. = FALSE)
-  }
-  path
-}
-
