@@ -31,24 +31,24 @@ global_only <- function(fun) {
 #' @export
 globalise <- function(fun) {
   function(...) {
-    expanded_mode(fun(...))
+    cascade_mode(local_only(fun)(...))
   }
 }
 
-# Simplification, assuming that mode will only be expanded to get global libraries,
-# and not vice versa.
-expanded_mode <- local_only(function(expr) {
-  local_lib <- .libPaths()
+# This function evaluates an expression in a temporary "cascade" mode, where
+# both local and global libraries are accessible, with precedence to local ones.
+cascade_mode <- function(expr) {
+  current_lib <- .libPaths()
   pkgs <- loaded_pkgs(attached_only = FALSE)
-  on.exit(expanded_exit(local_lib, pkgs))
+  on.exit(cascade_exit(current_lib, pkgs))
   encap(all_lib_paths())
   eval(expr)
-})
+}
 
 # helper functions ------------------------------------------------------------------------------
 
-expanded_exit <- function(local_lib, pkgs) {
+cascade_exit <- function(current_lib, pkgs) {
   pkgs <- setdiff(loaded_pkgs(attached_only = FALSE), pkgs)
   unload_pkgs(pkgs, quiet = TRUE)
-  .libPaths(local_lib)
+  .libPaths(current_lib)
 }
